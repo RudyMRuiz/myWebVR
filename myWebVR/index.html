@@ -11,50 +11,19 @@
 
     <!-- define our shaders -->
     <script id="shader-fs" type="x-shader/x-fragment">
-        varying highp vec2 vTextureCoord;
+        precision mediump float;
+
+        varying vec2 vTextureCoord;
         varying highp vec3 vLighting;
 
-        varying lowp vec4 vColor;
-        varying highp vec4 vBump;
-
         uniform sampler2D uSampler;
-        uniform sampler2D uBump;
-
-        uniform lowp float type;
-        uniform lowp float time;
-
-        varying highp vec2 noise;
 
         void main(void) {
-            if (type == 0.0) { // Reg Phong
-                highp vec4 texelColor = texture2D(uSampler, vTextureCoord);
-                highp vec4 bumpMap = texture2D(uBump, vTextureCoord);
-                gl_FragColor = vec4(texelColor.rgb * vLighting, texelColor.a);
-                
-            }
-            else if (type == 1.0) { // FLAT
-                gl_FragColor = vColor;
-            }
-            else if(type == 2.0) {  // Noise
-                highp vec4 texelColor = texture2D(uSampler, vTextureCoord);
-                gl_FragColor = vec4(texelColor.rgb * vec3(time, time, time), 1.0);
-            }
-            else if(type == 3.0) { // Math
-                highp float x = fract(sin(dot(noise.xy ,vec2(2.0,8.0))) * 500.0);
-                highp vec4 texelColor = texture2D(uSampler, noise);
-                gl_FragColor = vec4(texelColor.rgb * x * vLighting, texelColor.a);
-            }
-            else if(type == 4.0) { // bump
-                
-            }
-            else if(type == 5.0) { // Extra Credit
-                highp vec2 newNoise = vec2(noise.x * time, noise.y * time);
-                highp float x = fract(sin(dot(newNoise.xy ,vec2(2.0,8.0))) * 5.0);
-                highp float y = x + fract(cos(dot(newNoise.xy ,vec2(8.0,2.0))) * 5.0);
-                highp vec4 texelColor = texture2D(uSampler, noise);
+            highp vec4 texelColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));
 
-                gl_FragColor = vec4(texelColor.rgb * y * vLighting, texelColor.a);
-            }
+            gl_FragColor = vec4(texelColor.rgb * vLighting, texelColor.a);
+            //gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));
+            //gl_FragColor = vec4(0.0, 0.0, 0.5, 1.0);
         }
     </script>
 
@@ -63,48 +32,25 @@
         attribute vec4 aVertexPosition;
         attribute vec3 aVertexNormal;
         attribute vec2 aTextureCoord;
-        attribute vec4 aVertexColor;
-        attribute vec3 aVertexTangent;
 
-        uniform mat4 uNormalMatrix;
         uniform mat4 uMVMatrix;
         uniform mat4 uPMatrix;
+        uniform mat4 uNormalMatrix;
 
-        uniform int lightOption;
-        uniform lowp float time;
-        uniform lowp float type;
-
-        uniform vec3 ambientLight;
-        uniform vec3 sunlightColor;
-        uniform vec3 sunlightDirection;
-
-       
         varying highp vec2 vTextureCoord;
         varying highp vec3 vLighting;
-        varying lowp vec4 vColor;
-        varying highp vec2 noise;
 
         void main(void) {
             gl_Position = uPMatrix * uMVMatrix * aVertexPosition;
             vTextureCoord = aTextureCoord;
-            vColor = aVertexColor;
 
             // Apply lighting effect
+            highp vec3 ambientLight = vec3(0.3, 0.3, 0.3);
+            highp vec3 directionalLightColor = vec3(1, 1, 1);
+            highp vec3 directionalVector = normalize(vec3(0.85, 0.8, 0.75));
             highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);
-            highp float directional = max(dot(transformedNormal.xyz, sunlightDirection), 0.0);
-            
-            if(lightOption == 0){
-                vLighting = ambientLight;
-            }
-            else if(lightOption == 1){
-                vLighting = sunlightColor * directional;
-            }
-            else if(lightOption == 2){
-                vLighting = ambientLight  + (sunlightColor * directional);
-            }
-
-            noise = gl_Position.xy/gl_Position.ww;
-            noise = noise * 0.5 + 0.5;
+            highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
+            vLighting = ambientLight + (directionalLightColor * directional);
             
         }
     </script>
